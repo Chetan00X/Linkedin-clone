@@ -1,43 +1,74 @@
 import classes from "./Login.module.css";
 import LoginLinkdin from "../assets/loginLinkdin.svg";
 import { useState } from "react";
-import { signup, useAuth, upload } from "./Firebase";
-import { authenticationAction } from "../store/user-slice";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { login } from "../store/user-slice";
 import { useDispatch, useSelector } from "react-redux";
+import { useRef } from "react";
 
 const Login = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [profilePic, setprofilePic] = useState("");
-  const currentUser = useAuth();
+  const auth = getAuth();
   const dispatch = useDispatch();
-
-  const registerHandler = async () => {
-    if (!name) {
-      return alert("Please enter a full name ");
-    }
-    try {
-      await signup(name, email);
-      console.log(currentUser.email);
-      dispatch(
-        authenticationAction.login({
-          email: currentUser.email,
-          uid: currentUser.uid,
-          displayName: name,
-          photoUrl: profilePic,
-        })
-      );
-    } catch (error) {
-      alert(error.message);
-    }
-    upload(profilePic, currentUser);
-  };
+  const profilePicRef = useRef();
 
   const loginHandler = (e) => {
     e.preventDefault();
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userAuth) => {
+        dispatch(
+          login({
+            email: userAuth.user.email,
+            uid: userAuth.user.uid,
+            displayName: userAuth.user.displayName,
+            photoUrl: userAuth.user.photoURL,
+          })
+        );
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
   };
 
+  const registerHandler = () => {
+    if (!name) {
+      return alert("Please enter a full name");
+    }
+    setprofilePic(profilePicRef.current.value);
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userAuth) => {
+        updateProfile(auth.currentUser, {
+          displayName: name,
+          photoUrl: profilePic,
+        }).then(() => {
+          dispatch(
+            login({
+              email: userAuth.user.email,
+              uid: userAuth.user.uid,
+              displayName: name,
+              photoUrl: profilePic,
+            })
+          );
+        });
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
+    setName("");
+    setprofilePic("");
+    setPassword("");
+    setEmail("");
+  };
   const nameChangeHandler = (e) => {
     setName(e.target.value);
   };
@@ -66,6 +97,7 @@ const Login = () => {
           onChange={nameChangeHandler}
         />
         <input
+          ref={profilePicRef}
           type="text"
           placeholder="profilePic pic URL (optional)"
           value={profilePic}

@@ -17,10 +17,13 @@ import {
   addDoc,
 } from "firebase/firestore";
 import db from "./Firebase.js";
+import { useSelector } from "react-redux";
 
 const Feed = () => {
   const [post, setPosts] = useState([]);
   const [input, setInput] = useState("");
+  const user = useSelector((state) => state.user.user);
+  console.log(user.name);
 
   useEffect(() => {
     const collectionRef = collection(db, "posts");
@@ -42,10 +45,10 @@ const Feed = () => {
 
     const collectionRef = collection(db, "posts");
     const payload = {
-      name: "chetan Srivastava",
-      description: "this is a test",
+      name: user.displayName,
+      description: user.email,
       message: input,
-      photoUrl: "./",
+      photoUrl: user.photoURL,
       timestamp: serverTimestamp(),
     };
 
@@ -77,13 +80,15 @@ const Feed = () => {
         </div>
       </div>
       {post.map(({ name, description, message, photoUrl, id }) => (
-        <Post
-          keys={id}
-          name={name}
-          description={description}
-          message={message}
-          photoUrl={photoUrl}
-        />
+        <div key={id}>
+          <Post
+            keys={id}
+            name={name}
+            description={description}
+            message={message}
+            photoUrl={photoUrl}
+          />
+        </div>
       ))}
     </div>
   );
